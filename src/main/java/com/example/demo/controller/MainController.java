@@ -5,9 +5,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-public class MazeController {
-	@RequestMapping("/usr/home/maze")
-	public String showMaze() {
-		return "/usr/home/maze";
+public class MainController {
+	@RequestMapping("/usr/home/main")
+	public String showMain() {
+		return "/usr/home/main";
 	}
 }
