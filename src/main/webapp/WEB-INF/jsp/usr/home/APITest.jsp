@@ -1,21 +1,38 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
-<c:set var="pageTitle" value="API TEST"></c:set>
+<c:set var="pageTitle" value="APITEST"></c:set>
 
 <script>
-	const API_KEY = 'ZXk2DrDdVlzzp6UIrQbJGI9S8oFqBrn69AaP%2B9KV%2FTXdJ8RvZrCIAUKs%2BgUWClh7Vi8nNce5hXgrGncCf91pdA%3D%3D';
-	
-	async function getCData() {
-		const url = 'https://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getProductInfoSvc.do?serviceKey='+ API_KEY;
-		const response = await
-		fetch(url);
-		const data = await
-		response.json();
-		console.log("data", data);
-	}
-	getCData();
+const API_KEY = encodeURIComponent('llvpYURxInBanHczUcjI2GEOqjse7+XuXJfxblF4qKvO8E/w56ir7k1Zg2e20G3ruc481lscs4BBENSPtEJBug==');
 
+async function getCData() {
+    const url = 'http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getProductInfoSvc.do?serviceKey=' + API_KEY;
+    
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.statusText);
+        }
+        const textData = await response.text();
+        
+        // XML 파싱
+        const parser = new DOMParser();
+        const xmlData = parser.parseFromString(textData, "application/xml");
+        
+        console.log("Parsed XML Data:", xmlData);
+        
+        // XML 데이터에서 필요한 정보를 추출
+        const productName = xmlData.querySelector("itemName")?.textContent || "Item not found";
+        console.log("Product Name:", productName);
+        
+    } catch (error) {
+        console.error("Error fetching data:", error);
+    }
+}
+
+getCData();
 </script>
+
 
 <%@ include file="../common/head.jspf"%>
 

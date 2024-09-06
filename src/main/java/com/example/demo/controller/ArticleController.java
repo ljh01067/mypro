@@ -10,4 +10,12 @@ public class ArticleController {
 	public String showItem() {
 		return "/usr/article/item";
 	}
+	@RequestMapping("/usr/article/cart")
+	public String showCart() {
+		return "/usr/article/cart";
+	}
+	@RequestMapping("/usr/article/discount")
+	public String showDiscount() {
+		return "/usr/article/discount";
+	}
 }
