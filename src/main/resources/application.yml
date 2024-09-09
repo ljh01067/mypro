@@ -17,3 +17,6 @@ spring:
     password: 
 mybatis:
   type-aliases-package: com.example.demo.vo
+api:
+  base-url: "http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getProductInfoSvc.do"
+  service-key: "llvpYURxInBanHczUcjI2GEOqjse7%2BXuXJfxblF4qKvO8E%2Fw56ir7k1Zg2e20G3ruc481lscs4BBENSPtEJBug%3D%3D"
