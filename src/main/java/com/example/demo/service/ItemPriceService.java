@@ -1,33 +1,35 @@
 package com.example.demo.service;
 
 import com.example.demo.dto.ItemPriceResponse;
+import com.example.demo.repository.ItemPriceRepository;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 @Service
 public class ItemPriceService {
+    
+    private final ItemPriceRepository itemPriceRepository;
 
-    @Value("${api.base-url}")
-    private String baseUrl;
-
-    @Value("${api.service-key}")
-    private String serviceKey;
-
-    private final RestTemplate restTemplate;
-
-    public ItemPriceService(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+    @Autowired
+    public ItemPriceService(ItemPriceRepository itemPriceRepository) {
+        this.itemPriceRepository = itemPriceRepository;
     }
 
-    public ItemPriceResponse getItemPrices(String goodId) {
-        String url = String.format("%s?goodId=%s&serviceKey=%s", baseUrl, goodId, serviceKey);
-
-        try {
-            return restTemplate.getForObject(url, ItemPriceResponse.class);
-        } catch (Exception e) {
-            e.printStackTrace(); // 로그에 오류를 기록
-            throw e; // 예외를 다시 던져서 컨트롤러에서 처리할 수 있게 함
-        }
+    public List<String> getCategories() {
+        return itemPriceRepository.findAllCategories();
     }
+
+    public List<String> getDetailItems(String category) {
+        return itemPriceRepository.findDetailItemsByCategory(category);
+    }
+
+    public List<String> getProducts(String detailItem) {
+        return itemPriceRepository.findProductsByDetailItem(detailItem);
+    }
+    
 }
