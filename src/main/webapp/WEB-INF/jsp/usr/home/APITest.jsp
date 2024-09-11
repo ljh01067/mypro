@@ -1,33 +1,31 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
-<c:set var="pageTitle" value="APITEST"></c:set>
+<c:set var="pageTitle" value="API TEST"></c:set>
 
 <script>
-const API_KEY = encodeURIComponent('llvpYURxInBanHczUcjI2GEOqjse7+XuXJfxblF4qKvO8E/w56ir7k1Zg2e20G3ruc481lscs4BBENSPtEJBug==');
+function getCData() {
+    const url = '/usr/home/getCData'; // 서버에서 프록시로 API 호출
+    const xhr = new XMLHttpRequest();
 
-async function getCData() {
-    const url = 'http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getProductInfoSvc.do?serviceKey=' + API_KEY;
-    
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error('Network response was not ok: ' + response.statusText);
+    xhr.open("GET", url, true);
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            const xmlResponse = xhr.responseText;
+            console.log("XML Data:", xmlResponse);
+            
+            // 여기서 XML 파싱 및 처리를 수행
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+            
+            const items = xmlDoc.getElementsByTagName('item');
+            for (let i = 0; i < items.length; i++) {
+            	const itemId = items[i].getElementsByTagName('goodId')[0].textContent;
+                const itemName = items[i].getElementsByTagName('goodName')[0].textContent;
+                console.log('Item Id /Item Name:',itemId, itemName);
+            }
         }
-        const textData = await response.text();
-        
-        // XML 파싱
-        const parser = new DOMParser();
-        const xmlData = parser.parseFromString(textData, "application/xml");
-        
-        console.log("Parsed XML Data:", xmlData);
-        
-        // XML 데이터에서 필요한 정보를 추출
-        const productName = xmlData.querySelector("itemName")?.textContent || "Item not found";
-        console.log("Product Name:", productName);
-        
-    } catch (error) {
-        console.error("Error fetching data:", error);
-    }
+    };
+    xhr.send();
 }
 
 getCData();
