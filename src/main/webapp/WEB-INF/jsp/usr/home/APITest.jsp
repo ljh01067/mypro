@@ -19,9 +19,12 @@ function getCData() {
             
             const items = xmlDoc.getElementsByTagName('item');
             for (let i = 0; i < items.length; i++) {
-            	const itemId = items[i].getElementsByTagName('goodId')[0].textContent;
-                const itemName = items[i].getElementsByTagName('goodName')[0].textContent;
-                console.log('Item Id /Item Name:',itemId, itemName);
+            	const goodSmlclsCode = items[i].getElementsByTagName('goodSmlclsCode')[0].textContent;
+            	if(goodSmlclsCode == '030201021'){
+            	 const itemId = items[i].getElementsByTagName('goodId')[0].textContent;
+                 const itemName = items[i].getElementsByTagName('goodName')[0].textContent;
+                 console.log('Item Id /Item Name:',itemId, itemName);
+            	}
             }
         }
     };
