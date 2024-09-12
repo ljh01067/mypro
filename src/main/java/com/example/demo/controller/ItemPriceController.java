@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -26,7 +27,8 @@ public class ItemPriceController {
     }
     @GetMapping("/detailItems")
     @ResponseBody
-    public List<String> getDetailItems(@RequestParam String category) {
+    public List<String> getDetailItems(@RequestParam(name = "category") String category) {
+    	System.out.println("category: " + category);
         if (category == null || category.trim().isEmpty()) {
             // 빈 문자열에 대한 예외 처리
             throw new IllegalArgumentException("Category must not be empty");
@@ -44,10 +46,12 @@ public class ItemPriceController {
 
     @GetMapping("/products")
     @ResponseBody
-    public List<String> getProducts(@RequestParam String detailItem) {
-        List<String> products = itemPriceService.getProducts(detailItem);
-        System.out.println("Products: " + products);
-        return products;  // 반드시 List<String>을 반환
+    public String getProductsByDetailId(@RequestParam("detailItem") String detailItem) {
+  
+        String goodsmlclscode = itemPriceService.findGoodsmlclscodeByDetailItem(detailItem);
+        System.out.println("goodsmlclscode: " + goodsmlclscode);
+
+        return goodsmlclscode;
     }
 
     @GetMapping("/categories")

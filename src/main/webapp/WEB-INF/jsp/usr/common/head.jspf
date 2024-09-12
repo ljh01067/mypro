@@ -126,44 +126,12 @@
       <ul class="height-100p flex">
         <li>
           <a href="../article/item" class="flex flex-ai-c height-100p">품목별 가격정보</a>
-          <ul>
-            <li><a href="#">곡물가공품
-             </a></li>
-            <li><a href="#">정육·난류
-             </a></li>
-            <li><a href="#">수산가공품
-             </a></li>
-            <li><a href="#">낙농·수산가공품
-             </a></li>
-            <li><a href="#">조미료·장류·식용유
-             </a></li>
-            <li><a href="#">채소
-             </a></li>
-            <li><a href="#">과자·빙과류
-             </a></li>
-            <li><a href="#">차·음료·주류
-             </a></li>
-            <li><a href="#">미용품
-             </a></li>
-            <li><a href="#">세탁·주방·가사용품
-             </a></li>
-            <li><a href="#">생선류
-             </a></li>
-            <li><a href="#">기타 가공식품
-             </a></li>
-            <li><a href="#">곡물
-             </a></li>
-          </ul>
         </li>
         <li>
           <a href="../article/cart" class="flex flex-ai-c height-100p">장바구니 가격비교</a>
-          <ul>
-          </ul>
         </li>
         <li>
           <a href="../article/discount" class="flex flex-ai-c height-100p">생필품 할인 정보</a>
-          <ul>
-          </ul>
         </li>
       </ul>
       <div class="bg"></div>

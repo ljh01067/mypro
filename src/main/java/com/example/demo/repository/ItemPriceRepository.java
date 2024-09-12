@@ -20,9 +20,7 @@ public interface ItemPriceRepository {
 
 
     @Select("""
-            SELECT p.name FROM product p 
-            INNER JOIN detailitem d ON p.detailid = d.detailid 
-            WHERE d.name = #{detailItem}
+            SELECT d.goodSmlclsCode FROM detailitem d WHERE d.name = #{detailItem};
             """)
-    public List<String> findProductsByDetailItem(@Param("detailItem") String detailItem);
+    public String findGoodsmlclscodeByDetailId(@Param("detailItem") String detailItem);
 }

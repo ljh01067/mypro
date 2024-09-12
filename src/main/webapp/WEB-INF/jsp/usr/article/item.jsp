@@ -7,57 +7,90 @@ function updateDetailItems() {
     const category = document.getElementById("category").value;
     const detailItemSelect = document.getElementById("detailItem");
 
-    const encodedCategory = encodeURIComponent(category);
+    if (!category) {
+        alert("품목을 선택해 주세요.");
+        return;
+    }
 
-    fetch(`/usr/article/detailItems?category=${encodedCategory}`)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+    $.ajax({
+        url: `/usr/article/detailItems`,
+        type: 'GET',
+        data: { category: category },
+        success: function(data) {
+            if (Array.isArray(data)) {
+                detailItemSelect.innerHTML = "<option value='' selected disabled>상세품목을 선택하세요</option>";
+                data.forEach(item => {
+                    const option = document.createElement("option");
+                    option.value = item;
+                    option.textContent = item;
+                    detailItemSelect.appendChild(option);
+                });
+            } else {
+                console.error('서버 응답이 배열이 아닙니다:', data);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('상세 품목을 가져오는 중 오류 발생:', error);
+            alert('상세 품목을 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
         }
-        return response.json();
-    })
-    .then(data => {
-        if (Array.isArray(data)) {
-            detailItemSelect.innerHTML = "<option value='' selected disabled>상세품목을 선택하세요</option>";
-            data.forEach(item => {
-                const option = document.createElement("option");
-                option.value = item;
-                option.textContent = item;
-                detailItemSelect.appendChild(option);
-            });
-        } else {
-            console.error('서버 응답이 배열이 아닙니다:', data);
-        }
-    })
-    .catch(error => {
-        console.error('상세 품목을 가져오는 중 오류 발생:', error);
-        alert('상세 품목을 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
     });
 }
 
 function updateProductOptions() {
     const detailItem = document.getElementById("detailItem").value;
-    const productSelect = document.getElementById("product");
 
-    fetch(`/usr/article/products?detailItem=${detailItem}`)
-        .then(response => response.json())
-        .then(data => {
-            if (Array.isArray(data)) { // data가 배열인지 확인
-                productSelect.innerHTML = "<option value='' selected disabled>상품을 선택하세요</option>";
-                data.forEach(item => {
-                    const option = document.createElement("option");
-                    option.value = item;
-                    option.textContent = item;
-                    productSelect.appendChild(option);
+    if (!detailItem) {
+        alert("상세품목을 선택해 주세요.");
+        return;
+    }
+
+    // 첫 번째 AJAX 호출: goodsmlclscode 가져오기
+    $.ajax({
+        url: `/usr/article/products`,
+        type: 'GET',
+        data: { detailItem: detailItem },
+        success: function(goodsmlclscode) {
+
+            // 두 번째 AJAX 호출: XML 데이터 가져오기
+            fetch('/usr/home/getCData')
+                .then(response => response.text())
+                .then(xmlResponse => {
+                   
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+                    
+                    const items = xmlDoc.getElementsByTagName('item');
+                    const goodNames = []; // goodName을 저장할 배열
+
+                    for (let i = 0; i < items.length; i++) {
+                        const goodSmlclsCode = items[i].getElementsByTagName('goodSmlclsCode')[0].textContent;
+                        if (goodSmlclsCode === '0'+goodsmlclscode) {
+                            const itemName = items[i].getElementsByTagName('goodName')[0].textContent;
+                            goodNames.push(itemName); // goodName을 배열에 추가
+                        }
+                    }
+
+                    
+                    // 상품 선택 목록 업데이트
+                    const productSelect = document.getElementById("product");
+                    productSelect.innerHTML = "<option value='' selected disabled>상품을 선택하세요</option>";
+                    goodNames.forEach(name => {
+                        const option = document.createElement("option");
+                        option.value = name; // 선택 값으로 goodName을 설정
+                        option.textContent = name; // 표시되는 텍스트로 goodName을 설정
+                        productSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('XML 데이터를 가져오는 중 오류 발생:', error);
+                    alert('XML 데이터를 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
                 });
-            } else {
-                console.error('서버 응답이 배열이 아닙니다:', data);
-            }
-        })
-        .catch(error => {
-            console.error('상품을 가져오는 중 오류 발생:', error);
-            alert('상품을 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
-        });
+        },
+        error: function(xhr, status, error) {
+            console.error('goodsmlclscode를 가져오는 중 오류 발생:', error);
+            alert('goodsmlclscode를 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
+        }
+    });
 }
 </script>
 
@@ -153,6 +186,11 @@ function updateProductOptions() {
         </div>
     </div>
 </div>
+<div class="ta-c">
+<br>
+<button class="w-500 b-l-1">조회하기</button>
+</div>
+
     <style>
     hr { border-top:1px solid #9C9C9C;
     border-bottom:1px solid #F6F6F6;
