@@ -3,6 +3,74 @@
 <c:set var="pageTitle" value="ITEM"></c:set>
 <%@ include file="../common/head.jspf"%>
 <script>
+function updateStore() {
+    const business = document.querySelectorAll("input[name='business']:checked");
+    const region = document.getElementById("region").value;
+    console.log(business);
+
+    // 업소 선택 여부 확인
+    if (business.length === 0) {
+        alert("업소를 선택해 주세요.");
+        return;
+    }
+
+    // 선택된 업소 값을 배열로 변환
+    const businessValues = Array.from(business).map(input => input.value);
+
+    // Ajax로 업소 코드 이름 가져오기
+    $.ajax({
+    url: `/usr/article/businesscodename`,
+    type: 'GET',
+    traditional: true,  // 배열을 전통적인 방식으로 직렬화
+    data: { business: businessValues },
+    success: function(businessCodeNames) {
+    	console.log('업소 코드 이름들:', businessCodeNames);
+            // XML 데이터 요청
+            fetch('/usr/home/getSData')
+                .then(response => response.text())
+                .then(xmlResponse => {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+
+                    // XML 데이터에서 'iros.openapi.service.vo.entpInfoVO' 태그 찾기
+                    const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
+                    const storeNames = [];
+
+                    // XML 데이터에서 조건에 맞는 항목 필터링
+                    Array.from(items).forEach(item => {
+                        const entptypecode = item.getElementsByTagName('entpTypeCode')[0]?.textContent.trim();
+                        const roadaddrbasic = item.getElementsByTagName('roadAddrBasic')[0]?.textContent.trim().split(' ')[0];
+
+                        // 업소 코드와 지역 조건에 맞는 항목을 필터링
+                        if (businessCodeNames.includes(entptypecode) && (region === '*' || roadaddrbasic === region)) {
+                            const storeName = item.getElementsByTagName('entpName')[0]?.textContent.trim();
+                            if (storeName) {
+                                storeNames.push(storeName);
+                            }
+                        }
+                    });
+
+                    // 상점 목록을 갱신
+                    const storeSelect = document.getElementById("store");
+                    storeSelect.innerHTML = "<option value='' selected disabled>전체</option>";
+                    storeNames.forEach(store => {
+                        const option = document.createElement("option");
+                        option.value = store;
+                        option.textContent = store;
+                        storeSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('XML 데이터를 가져오는 중 오류 발생:', error);
+                    alert('XML 데이터를 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
+                });
+        },
+        error: function(xhr, status, error) {
+            console.error('업소 코드를 가져오는 중 오류 발생:', error);
+            alert('업소 코드를 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
+        }
+    });
+}
 function updateDetailItems() {
     const category = document.getElementById("category").value;
     const detailItemSelect = document.getElementById("detailItem");
@@ -98,64 +166,29 @@ function updateProductOptions() {
     <div class="inline-block ta-c b-l-1 w-500">
         <div class="inline-block pd-0 mg-0 ta-c">
             <div class="inline-block w-75px pd-0 mg-0">업소</div>
-            <div class="inline-block pd-0 mg-l--5 ta-c">
-                <label>
-                    <input type="checkbox">
-                    <span>대형마트</span>
-                </label>
-                <label>
-                    <input type="checkbox">
-                    <span>백화점</span>
-                </label>
-                <label>
-                    <input type="checkbox">
-                    <span>슈퍼마켓</span>
-                </label>
-                <label>
-                    <input type="checkbox">
-                    <span>전통시장</span>
-                </label>
-                <label>
-                    <input type="checkbox">
-                    <span>편의점</span>
-                </label>
+            <div class="inline-block pd-0 mg-l--5 ta-c checkbox-item">
+                <c:forEach var="business" items="${business}">
+            <input type="checkbox" id="business-${business}" name="business" value="${business}" onchange="updateStore()">
+            <label for="business-${business}">${business}</label>
+    </c:forEach>
             </div>
         </div>
         <hr>
         <br>
         <div class="inline-block w-75px pd-0 mg-0">지역</div>
         <div class="inline-block w-150px pd-0 mg-l--5 ta-c m-b-25">
-            <select name="" id="">
-                <option value="1">전체</option>
-                <option value="2">서울특별시</option>
-                <option value="3">부산광역시</option>
-                <option value="4">대구광역시</option>
-                <option value="5">대전광역시</option>
-                <option value="6">광주광역시</option>
-                <option value="7">울산광역시</option>
-                <option value="8">인천광역시</option>
-                <option value="9">강원특별자치도</option>
-                <option value="10">경기도</option>
-                <option value="11">경상남도</option>
-                <option value="12">경상북도</option>
-                <option value="13">전라남도</option>
-                <option value="14">전북특별자치도</option>
-                <option value="15">충청남도</option>
-                <option value="16">충청북도</option>
-                <option value="17">제주특별자치도</option>
-                <option value="18">세종특별자치시</option>
-            </select>
+            <select name="region" id="region" onchange="updateStore()">
+    <option value="*">전체</option>
+    <c:forEach var="region" items="${region}">
+        <option value="${region}">${region}</option>
+    </c:forEach>
+</select>
         </div>
         <div class="inline-block w-75px pd-0 mg-0">판매점</div>
         <div class="inline-block w-150px pd-0 mg-l--5 ta-c">
-            <select name="" id="">
-                <option value="1">전체</option>
-                <option value="2">대형마트</option>
-                <option value="3">백화점</option>
-                <option value="4">슈퍼마켓</option>
-                <option value="5">전통시장</option>
-                <option value="6">편의점</option>
-            </select>
+            <select name="store" id="store" style="vertical-align: middle;">
+                    <option value="" selected disabled>전체</option>
+                </select>
         </div>
         <hr>
         <br>

@@ -20,9 +20,21 @@ public class ItemPriceService {
     public ItemPriceService(ItemPriceRepository itemPriceRepository) {
         this.itemPriceRepository = itemPriceRepository;
     }
+    
+    public List<String> getBusiness() {
+        return itemPriceRepository.findAllBusiness();
+    }
+    
+    public List<String> getRegion() {
+        return itemPriceRepository.findAllRegion();
+    }
 
     public List<String> getCategories() {
         return itemPriceRepository.findAllCategories();
+    }
+    
+    public List<String> getBusinessCodeName(String business) {
+        return itemPriceRepository.findBusinessCodeName(business);
     }
 
     public List<String> getDetailItems(String category) {

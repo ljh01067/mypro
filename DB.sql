@@ -4,7 +4,8 @@ USE `price`;
 
 CREATE TABLE business(
        id INT(10) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
-      `name` CHAR(20) NOT NULL
+      `name` CHAR(20) NOT NULL,
+      codeName CHAR(20) NOT NULL
 );
 
 CREATE TABLE region(
@@ -27,15 +28,20 @@ CREATE TABLE product(
       `name` CHAR(20) NOT NULL
 );
 INSERT INTO business
-SET `name` = '대형마트';
+SET `name` = '대형마트',
+codeName = 'LM';
 INSERT INTO business
-SET `name` = '백화점';
+SET `name` = '백화점',
+codeName = 'DP';
 INSERT INTO business
-SET `name` = '슈퍼마켓';
+SET `name` = '슈퍼마켓',
+codeName = 'SM';
 INSERT INTO business
-SET `name` = '전통시장';
+SET `name` = '전통시장',
+codeName = 'JM';
 INSERT INTO business
-SET `name` = '편의점';
+SET `name` = '편의점',
+codeName = 'CS';
 
 INSERT INTO region
 SET `name` = '서울특별시';
@@ -735,3 +741,63 @@ INSERT INTO detailitem
 SET categoryid =13,
 `name` = '쌀(백미)',
 goodSmlclsCode = 30205015;
+
+INSERT INTO product
+SET detailid =1,
+`name` = '일반쌀';
+INSERT INTO product
+SET detailid =1,
+`name` = '유기농쌀';
+INSERT INTO product
+SET detailid =2,
+`name` = '강력분';
+INSERT INTO product
+SET detailid =2,
+`name` = '중력분';
+INSERT INTO product
+SET detailid =3,
+`name` = '찰보리';
+INSERT INTO product
+SET detailid =3,
+`name` = '일반보리';
+INSERT INTO product
+SET detailid =4,
+`name` = '한우';
+INSERT INTO product
+SET detailid =4,
+`name` = '수입산';
+INSERT INTO product
+SET detailid =5,
+`name` = '삼겹살';
+INSERT INTO product
+SET detailid =5,
+`name` = '목살';
+INSERT INTO product
+SET detailid =6,
+`name` = '닭가슴살';
+INSERT INTO product
+SET detailid =6,
+`name` = '닭다리';
+
+SELECT * FROM business;
+SELECT * FROM region;
+SELECT * FROM category;
+SELECT * FROM detailitem;
+SELECT * FROM product;
+
+SELECT `name` FROM category;
+
+SELECT p.name FROM category c
+INNER JOIN detailitem d ON c.id = d.categoryid
+INNER JOIN product p ON d.detailid = p.detailid
+WHERE c.`name` = '곡물가공품' AND d.`name`='밀가루';
+
+SELECT d.name FROM category c
+INNER JOIN detailitem d ON c.id = d.categoryid
+WHERE c.`name` = '곡물가공품';
+
+SELECT d.goodSmlclsCode FROM detailitem d WHERE d.name = '견과류';
+
+SELECT b.codeName 
+    	    FROM business b
+    	    WHERE b.`name` IN ('대형마트');

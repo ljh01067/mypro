@@ -23,6 +23,10 @@ public class ItemPriceController {
     public String showItemPage(Model model) {
         List<String> categories = itemPriceService.getCategories();
         model.addAttribute("categories", categories);
+        List<String> business = itemPriceService.getBusiness(); 
+        model.addAttribute("business", business);
+        List<String> region = itemPriceService.getRegion(); 
+        model.addAttribute("region", region);
         return "/usr/article/item"; // JSP 페이지 이름
     }
     @GetMapping("/detailItems")
@@ -37,6 +41,26 @@ public class ItemPriceController {
             List<String> detailItems = itemPriceService.getDetailItems(category);
             System.out.println("Detail Items: " + detailItems);
             return detailItems;
+        } catch (Exception e) {
+            // 예외 처리 및 로그 기록
+            e.printStackTrace();
+            throw new RuntimeException("서버 오류가 발생했습니다. 나중에 다시 시도해 주세요.");
+        }
+    }
+    @GetMapping("/businesscodename")
+    @ResponseBody
+    public List<String> getBusinessCodeName(@RequestParam(name = "business") List<String> business) {
+        System.out.println("business: " + business);
+        String businesses = String.join(", ", business);
+        System.out.println(businesses);
+        if (business == null || business.isEmpty()) {
+            // 빈 문자열에 대한 예외 처리
+            throw new IllegalArgumentException("Business must not be empty");
+        }
+        try {
+            List<String> businessCodeNames = itemPriceService.getBusinessCodeName(businesses);
+            System.out.println("Business Code Names: " + businessCodeNames);
+            return businessCodeNames;
         } catch (Exception e) {
             // 예외 처리 및 로그 기록
             e.printStackTrace();
@@ -58,5 +82,17 @@ public class ItemPriceController {
     @ResponseBody
     public List<String> getCategories() {
         return itemPriceService.getCategories();
+    }
+    
+    @GetMapping("/business")
+    @ResponseBody
+    public List<String> getBusiness() {
+        return itemPriceService.getBusiness();
+    }
+    
+    @GetMapping("/region")
+    @ResponseBody
+    public List<String> getRegion() {
+        return itemPriceService.getRegion();
     }
 }
