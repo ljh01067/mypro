@@ -33,7 +33,7 @@ public class ItemPriceService {
         return itemPriceRepository.findAllCategories();
     }
     
-    public List<String> getBusinessCodeName(String business) {
+    public List<String> getBusinessCodeName(List<String> business) {
         return itemPriceRepository.findBusinessCodeName(business);
     }
 

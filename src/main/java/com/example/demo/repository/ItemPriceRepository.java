@@ -17,12 +17,17 @@ public interface ItemPriceRepository {
     @Select("SELECT `name` FROM category")
     public List<String> findAllCategories();
 
-    @Select("""
-    	    SELECT b.codeName 
-    	    FROM business b
-    	    WHERE b.`name` IN (${business})
-    	    """)
-    	public List<String> findBusinessCodeName(@Param("business") String business);
+    @Select({
+        "<script>",
+        "SELECT b.codeName",
+        "FROM business b",
+        "WHERE b.name IN",
+        "<foreach item='item' collection='business' open='(' separator=',' close=')'>",
+        "#{item}",
+        "</foreach>",
+        "</script>"
+    })
+    public List<String> findBusinessCodeName(@Param("business") List<String> business);
     
     @Select("""
             SELECT d.name FROM category c
@@ -35,4 +40,5 @@ public interface ItemPriceRepository {
             SELECT d.goodSmlclsCode FROM detailitem d WHERE d.name = #{detailItem};
             """)
     public String findGoodsmlclscodeByDetailId(@Param("detailItem") String detailItem);
+
 }

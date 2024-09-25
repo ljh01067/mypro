@@ -1,6 +1,8 @@
 package com.example.demo.controller;
 
 import com.example.demo.service.ItemPriceService;
+import com.example.demo.vo.ItemPrice;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -29,6 +31,26 @@ public class ItemPriceController {
         model.addAttribute("region", region);
         return "/usr/article/item"; // JSP 페이지 이름
     }
+    @GetMapping("/cart")
+    public String showCartPage(Model model) {
+        List<String> categories = itemPriceService.getCategories();
+        model.addAttribute("categories", categories);
+        List<String> business = itemPriceService.getBusiness(); 
+        model.addAttribute("business", business);
+        List<String> region = itemPriceService.getRegion(); 
+        model.addAttribute("region", region);
+        return "/usr/article/cart"; // JSP 페이지 이름
+    }
+    @GetMapping("/discount")
+    public String showDiscountPage(Model model) {
+        List<String> categories = itemPriceService.getCategories();
+        model.addAttribute("categories", categories);
+        List<String> business = itemPriceService.getBusiness(); 
+        model.addAttribute("business", business);
+        List<String> region = itemPriceService.getRegion(); 
+        model.addAttribute("region", region);
+        return "/usr/article/discount"; // JSP 페이지 이름
+    }
     @GetMapping("/detailItems")
     @ResponseBody
     public List<String> getDetailItems(@RequestParam(name = "category") String category) {
@@ -51,14 +73,12 @@ public class ItemPriceController {
     @ResponseBody
     public List<String> getBusinessCodeName(@RequestParam(name = "business") List<String> business) {
         System.out.println("business: " + business);
-        String businesses = String.join(", ", business);
-        System.out.println(businesses);
         if (business == null || business.isEmpty()) {
             // 빈 문자열에 대한 예외 처리
             throw new IllegalArgumentException("Business must not be empty");
         }
         try {
-            List<String> businessCodeNames = itemPriceService.getBusinessCodeName(businesses);
+            List<String> businessCodeNames = itemPriceService.getBusinessCodeName(business);
             System.out.println("Business Code Names: " + businessCodeNames);
             return businessCodeNames;
         } catch (Exception e) {
@@ -93,6 +113,11 @@ public class ItemPriceController {
     @GetMapping("/region")
     @ResponseBody
     public List<String> getRegion() {
+        return itemPriceService.getRegion();
+    }
+    @GetMapping("/itemlist")
+    @ResponseBody
+    public List<String> getItemList() {
         return itemPriceService.getRegion();
     }
 }

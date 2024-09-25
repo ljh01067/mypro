@@ -39,10 +39,11 @@ function updateStore() {
                     // XML 데이터에서 조건에 맞는 항목 필터링
                     Array.from(items).forEach(item => {
                         const entptypecode = item.getElementsByTagName('entpTypeCode')[0]?.textContent.trim();
-                        const roadaddrbasic = item.getElementsByTagName('roadAddrBasic')[0]?.textContent.trim().split(' ')[0];
+                        const roadaddrbasic = item.getElementsByTagName('roadAddrBasic')[0]?.textContent.trim().slice(0, 2);
+                        const region2 = region.slice(0, 2);
 
                         // 업소 코드와 지역 조건에 맞는 항목을 필터링
-                        if (businessCodeNames.includes(entptypecode) && (region === '*' || roadaddrbasic === region)) {
+                        if (businessCodeNames.includes(entptypecode) && (region === '' || roadaddrbasic === region2)) {
                             const storeName = item.getElementsByTagName('entpName')[0]?.textContent.trim();
                             if (storeName) {
                                 storeNames.push(storeName);
@@ -161,11 +162,354 @@ function updateProductOptions() {
     });
 }
 </script>
+<script>
+function fetchItemList() {
+    const store = document.getElementById("store").value;
+    const product = document.getElementById("product").value;
+    const goodInspectDay = "20220805"; // 고정된 값 또는 필요한 경우 동적으로 설정
+    
+    console.log(store);
 
-<div class="ta-c">
-    <div class="inline-block ta-c b-l-1 w-500">
-        <div class="inline-block pd-0 mg-0 ta-c">
-            <div class="inline-block w-75px pd-0 mg-0">업소</div>
+    if (!store && !product) {
+        alert("모든 항목을 선택해 주세요.");
+        return;
+    }
+
+    let entpId = null, goodId = null;
+
+    // 첫 번째 요청: /usr/home/getSData에서 store에 해당하는 entpId 가져오기
+    if (store) {
+        fetchXMLData('/usr/home/getSData', (xmlDoc) => {
+            entpId = getStoreIdFromXML(xmlDoc, store);
+            console.log("Store ID (entpId):", entpId);
+
+            // 두 번째 요청: /usr/home/getCData에서 product에 해당하는 goodId 가져오기
+            if (product) {
+                fetchXMLData('/usr/home/getCData', (xmlDoc) => {
+                    goodId = getProductIdFromXML(xmlDoc, product);
+                    console.log("Product ID (goodId):", goodId);
+
+                    // 세 번째 요청: /usr/home/getPData에서 가격 가져오기 (entpId 또는 goodId가 없는 경우도 고려)
+                    fetchPriceData(entpId, goodId, goodInspectDay);
+                });
+            } else {
+                // 상품이 선택되지 않은 경우 상점 ID만으로 가격 조회
+                fetchPriceData(entpId, goodId, goodInspectDay);
+            }
+        });
+    } else if (product) {
+        // 상점이 선택되지 않은 경우 상품 ID만으로 가격 조회
+        fetchXMLData('/usr/home/getCData', (xmlDoc) => {
+            goodId = getProductIdFromXML(xmlDoc, product);
+            console.log("Product ID (goodId):", goodId);
+
+            fetchPriceData(entpId, goodId, goodInspectDay);
+        });
+    }
+}
+
+// 가격 정보를 가져오는 함수 (entpId 또는 goodId가 없는 경우 처리)
+async function fetchPriceData(entpId, goodId, goodInspectDay) {
+    // 세 번째 요청: /usr/home/getPData에서 가격 가져오기
+    fetchXMLDataWithParams('/usr/home/getPData', { entpId, goodId, goodInspectDay }, async (xmlDoc) => {
+        // getPricesFromXML을 호출할 때 await를 사용하여 결과를 기다림
+        const prices = await getPricesFromXML(xmlDoc, goodId, entpId);
+
+        // prices 배열이 비어있지 않은 경우 가격 테이블 업데이트
+        if (prices.length > 0) {
+            updatePriceTable(prices);
+        } else {
+            console.log("가격을 찾을 수 없음");
+            alert("해당 상품의 가격을 찾을 수 없습니다.");
+        }
+    });
+}
+
+function updatePriceTable(prices) {
+    const tableBody = document.querySelector("#priceDisplay table tbody");
+    tableBody.innerHTML = ""; // 기존 내용을 지우고 새 데이터를 추가
+
+    prices.forEach(price => {
+        const row = document.createElement("tr");
+
+        const goodIdCell = document.createElement("td");
+        goodIdCell.style.textAlign = "center";
+        goodIdCell.textContent = price.goodId;
+        row.appendChild(goodIdCell);
+
+        const storeCell = document.createElement("td");
+        storeCell.style.textAlign = "center";
+        storeCell.textContent = price.entpId;
+        row.appendChild(storeCell);
+        
+        const productCell = document.createElement("td");
+        productCell.style.textAlign = "center";
+        productCell.textContent = price.product;
+        row.appendChild(productCell);
+
+        const priceCell = document.createElement("td");
+        priceCell.style.textAlign = "center";
+        priceCell.textContent = price.price + " 원";
+        row.appendChild(priceCell);
+
+        tableBody.appendChild(row);
+    });
+}
+
+function fetchXMLData(url, callback) {
+    console.log("Fetching URL:", url);
+    fetch(url)
+        .then(response => response.text())
+        .then(xmlResponse => {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+            console.log("Fetched Data:", xmlResponse); // 서버에서 받아온 XML 데이터 확인
+            callback(xmlDoc);
+        })
+        .catch(error => {
+            console.error('XML 데이터를 가져오는 중 오류 발생:', error);
+            alert('XML 데이터를 가져오는 데 실패했습니다.');
+        });
+}
+
+function fetchXMLDataWithParams(baseUrl, params, callback) {
+    let finalUrl = baseUrl;
+
+    // 파라미터가 존재하는지 확인하고, URL에 추가
+    if (params) {
+        const urlParams = new URLSearchParams();
+
+        // 각 파라미터의 값이 있을 경우에만 쿼리 스트링에 추가
+        if (params.entpId) {
+            urlParams.append('entpId', params.entpId);
+        }
+        if (params.goodId) {
+            urlParams.append('goodId', params.goodId);
+        }
+        if (params.goodInspectDay) {
+            urlParams.append('goodInspectDay', params.goodInspectDay);
+        }
+
+        // 파라미터가 있으면 '?'를 붙여서 쿼리스트링 형태로 변환
+        if (urlParams.toString()) {
+            finalUrl += '?' + urlParams.toString();
+        }
+    }
+
+    console.log("Final URL:", finalUrl);  // 최종 URL 출력
+
+    // fetch로 요청을 보냄
+    fetch(finalUrl)
+        .then(response => response.text())
+        .then(data => {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(data, "application/xml");
+            callback(xmlDoc);
+        })
+        .catch(error => {
+            console.error("Error fetching XML:", error);
+        });
+}
+
+function getStoreIdFromXML(xmlDoc, store) {
+    console.log("Parsing Store XML");
+    const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
+    for (let i = 0; i < items.length; i++) {
+        const entpName = items[i].getElementsByTagName('entpName')[0].textContent;
+        console.log("entpName:", entpName); // 상점 이름 확인
+        if (store === entpName) {
+            const entpId = items[i].getElementsByTagName('entpId')[0].textContent;
+            console.log("Matched entpId:", entpId); // 매칭된 상점 ID 확인
+            return entpId;
+        }
+    }
+    return null;
+}
+
+function getProductIdFromXML(xmlDoc, product) {
+    console.log("Parsing Product XML");
+    const items = xmlDoc.getElementsByTagName('item');
+    for (let i = 0; i < items.length; i++) {
+        const goodName = items[i].getElementsByTagName('goodName')[0].textContent;
+        console.log("goodName:", goodName); // 상품 이름 확인
+        if (product === goodName) {
+            const goodId = items[i].getElementsByTagName('goodId')[0].textContent;
+            console.log("Matched goodId:", goodId); // 매칭된 상품 ID 확인
+            return goodId;
+        }
+    }
+    return null;
+}
+
+async function fetchStoreName(entpId) {
+
+    try {
+        const response = await fetch('/usr/home/getSData');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const xmlText = await response.text();
+
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+
+        // xmlDoc이 null인지 확인
+        if (!xmlDoc) {
+            console.error("Failed to parse XML.");
+            return null;
+        }
+        if (!xmlDoc.documentElement) {
+            console.error("XML Document is not available or invalid.");
+            return null;
+        }
+
+        const storeName = getStoreNameFromXML(xmlDoc, entpId);
+        if (storeName) {
+            console.log("Found store name:", storeName); // 찾은 상점 이름 출력
+        } else {
+            console.log("No matching store found for entpId:", entpId); // 일치하는 상점이 없을 경우 로그
+        }
+        
+        return storeName; // 찾은 상점 이름 반환
+    } catch (error) {
+        console.error('Error fetching store name:', error);
+        return null; // 오류가 발생할 경우 null 반환
+    }
+}
+function getStoreNameFromXML(xmlDoc, entpId) {
+	const business = document.querySelectorAll("input[name='business']:checked");
+    const region = document.getElementById("region").value;
+    const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
+    for (let i = 0; i < items.length; i++) {
+    	const entptypecode = items[i].getElementsByTagName('entpTypeCode')[0]?.textContent.trim();
+        const itemEntpId = items[i].getElementsByTagName('entpId')[0].textContent;
+        const roadaddrbasic = items[i].getElementsByTagName('roadAddrBasic')[0]?.textContent.trim().slice(0, 2);
+        const region2 = region.slice(0, 2);
+        if (businessCodeNames.includes(entptypecode) && entpId === itemEntpId && region2 === roadaddrbasic) {
+            const entpName = items[i].getElementsByTagName('entpName')[0].textContent;
+            return entpName; // 찾은 상점 이름 반환
+        }
+    }
+    return null; // 매칭된 상점이 없을 경우 null 반환
+}
+
+async function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
+    console.log("Parsing Price XML");
+
+    // xmlDoc이 null인지 확인
+    if (!xmlDoc) {
+        console.error("xmlDoc is null or undefined.");
+        return returnMultiple ? [] : null;
+    }
+    if (!xmlDoc.documentElement) {
+        console.error("XML Document is not available or invalid.");
+        return returnMultiple ? [] : null;
+    }
+    console.log(xmlDoc.documentElement);
+
+    // XML 응답을 문자열로 변환하여 출력
+    const serializer = new XMLSerializer();
+    try {
+        const xmlString = serializer.serializeToString(xmlDoc);
+        console.log("XML Document:", xmlString);
+    } catch (error) {
+        console.error("Error serializing XML document:", error);
+        return returnMultiple ? [] : null;
+    }
+
+    const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.goodPriceVO');
+    console.log("Number of items found:", items.length);
+
+    // 여러 개의 가격을 저장할 배열
+    const prices = [];
+
+    for (let i = 0; i < items.length; i++) {
+        const itemGoodIdElement = items[i].getElementsByTagName('goodId')[0];
+        const itemEntpIdElement = items[i].getElementsByTagName('entpId')[0];
+        const itemGoodPriceElement = items[i].getElementsByTagName('goodPrice')[0];
+
+        const itemGoodId = itemGoodIdElement ? itemGoodIdElement.textContent.trim() : null;
+        const itemEntpId = itemEntpIdElement ? itemEntpIdElement.textContent.trim() : null;
+        const itemGoodPrice = itemGoodPriceElement ? itemGoodPriceElement.textContent.trim() : null;
+
+        const store = document.getElementById("store").value;
+        const region = document.getElementById("region").value;
+        const product = document.getElementById("product").value;
+
+        // 상품 아이디와 상점 아이디가 모두 있는 경우
+        if (goodId && entpId) {
+            if (itemGoodId === goodId && itemEntpId === entpId) {
+                if (!returnMultiple) {
+                    console.log("Matched Price:", itemGoodPrice);
+                    return itemGoodPrice;
+                }
+                prices.push({
+                    goodId: region,
+                    entpId: store,
+                    product: product,
+                    price: itemGoodPrice
+                });
+            }
+        }
+        // 상품 아이디만 있는 경우
+        else if (goodId && !entpId) {
+            if (itemGoodId === goodId) {
+                if (!returnMultiple) {
+                    console.log("Matched Price:", itemGoodPrice);
+                    return itemGoodPrice;
+                }
+                // entpId를 사용하여 상점 이름 가져오기
+                const storeName = await fetchStoreName(itemEntpId);
+                if (storeName) {  // storeName이 null인지 확인
+                    prices.push({
+                        goodId: region,
+                        entpId: storeName,  // 가져온 상점 이름 사용
+                        product: product,
+                        price: itemGoodPrice
+                    });
+                }
+            }
+        }
+        // 상점 아이디만 있는 경우
+        else if (!goodId && entpId) {
+            if (itemEntpId === entpId) {
+                if (!returnMultiple) {
+                    console.log("Matched Price:", itemGoodPrice);
+                    return itemGoodPrice;
+                }
+                prices.push({
+                    goodId: region,
+                    entpId: store,
+                    product: product,
+                    price: itemGoodPrice
+                });
+            }
+        }
+    }
+
+    if (returnMultiple) {
+        console.log("Matched Prices:", prices);
+        return prices;
+    } else {
+        console.log("가격을 찾을 수 없음");
+        return null;
+    }
+}
+
+</script>
+<div class="w-100%">
+<div class="inline-block w-1200px">
+<div class="fs-20px ta-l">
+<div class="w-200px ta-c">
+품목별 가격정보
+</div>
+</div>
+<br>
+<div class="w-1200px">
+    <div class="inline-block ta-c b-l-1 w-1200px">
+        <div class="inline-block pd-0 mg-0 w-1200px ta-l">
+            <div class="inline-block w-100px pd-0 mg-0 ta-c">업소</div>
             <div class="inline-block pd-0 mg-l--5 ta-c checkbox-item">
                 <c:forEach var="business" items="${business}">
             <input type="checkbox" id="business-${business}" name="business" value="${business}" onchange="updateStore()">
@@ -175,53 +519,80 @@ function updateProductOptions() {
         </div>
         <hr>
         <br>
-        <div class="inline-block w-75px pd-0 mg-0">지역</div>
-        <div class="inline-block w-150px pd-0 mg-l--5 ta-c m-b-25">
+        <div class="w-1200px ta-l">
+        <div class="inline-block w-100px ta-c pd-0 mg-0">지역</div>
+        <div class="inline-block w-500px pd-0 mg-l--5 ta-c m-b-25">
             <select name="region" id="region" onchange="updateStore()">
-    <option value="*">전체</option>
+    <option value="">전체</option>
     <c:forEach var="region" items="${region}">
         <option value="${region}">${region}</option>
     </c:forEach>
 </select>
         </div>
-        <div class="inline-block w-75px pd-0 mg-0">판매점</div>
-        <div class="inline-block w-150px pd-0 mg-l--5 ta-c">
+        <div class="inline-block w-100px pd-0 mg-0">판매점</div>
+        <div class="inline-block w-500px pd-0 mg-l--5 ta-c">
             <select name="store" id="store" style="vertical-align: middle;">
-                    <option value="" selected disabled>전체</option>
+                    <option value="" >전체</option>
                 </select>
+        </div>
         </div>
         <hr>
         <br>
-        <div class="inline-block pd-0 mg-0 ta-c">
-            <div class="inline-block w-75px pd-0 mg-0" style="vertical-align: middle;">품목</div>
-            <div class="inline-block pd-0 mg-l--5 ta-c m-b-25">
+        <div class="inline-block pd-0 mg-0 ta-l">
+            <div class="inline-block w-100px ta-c pd-0 mg-0" style="vertical-align: middle;">품목</div>
+            <div class="inline-block w-500px pd-0 mg-l--5 ta-c m-b-25">
                 <select name="category" id="category" onchange="updateDetailItems()">
-    <option value="" selected disabled>품목을 선택하세요</option>
+    <option value="" >품목을 선택하세요</option>
     <c:forEach var="category" items="${categories}">
         <option value="${category}">${category}</option>
     </c:forEach>
 </select>
             </div>
-            <div class="inline-block w-75px pd-0 mg-0" style="vertical-align: middle;">상세품목</div>
-            <div class="inline-block pd-0 mg-l--5 ta-c">
+            <div class="inline-block w-100px pd-0 mg-0" style="vertical-align: middle;">상세품목</div>
+            <div class="inline-block w-500px pd-0 mg-l--5 ta-c">
                 <select name="detailItem" id="detailItem" onchange="updateProductOptions()" style="vertical-align: middle;">
-                    <option value="" selected disabled>상세품목을 선택하세요</option>
+                    <option value="" >상세품목을 선택하세요</option>
                 </select>
             </div>
-            <hr class="w-500px">
+            <hr class="w-1200px">
             <br>
-            <div class="inline-block w-75px pd-0 mg-0" style="vertical-align: middle;">상품</div>
-            <div class="inline-block w-400px pd-0 mg-l--5 ta-c m-b-25">
+            <div class="inline-block ta-c w-100px pd-0 mg-0" style="vertical-align: middle;">상품</div>
+            <div class="inline-block w-1100px pd-0 mg-l--5 ta-c m-b-25">
                 <select name="product" id="product" style="vertical-align: middle;">
-                    <option value="" selected disabled>상품을 선택하세요</option>
+                    <option value="" >상품을 선택하세요</option>
                 </select>
             </div>
         </div>
     </div>
 </div>
+</div>
+</div>
+<!-- 조회하기 버튼 -->
 <div class="ta-c">
-<br>
-<button class="w-500 b-l-1">조회하기</button>
+    <br>
+    <button class="w-500 b-l-1" onclick="fetchItemList()">조회하기</button>
+    <div id="priceDisplay">
+        <table border="1" cellspacing="0" cellpadding="5" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align: center;">지역</th>
+                    <th style="text-align: center;">판매점</th>
+                    <th style="text-align: center;">제품명</th>
+                    <th style="text-align: center;">가격</th>
+                </tr>
+            </thead>
+            <tbody>
+                <c:forEach var="price" items="${prices}">
+                    <tr>
+                        <td style="text-align: center;">${price.goodId}</td>
+                        <td style="text-align: center;">${price.entpId}</td>
+                        <td style="text-align: center;">${price.product}</td>
+                        <td style="text-align: center;">${price.price} 원</td>
+                    </tr>
+                </c:forEach>
+            </tbody>
+        </table>
+    </div>
 </div>
 
     <style>
@@ -234,12 +605,16 @@ function updateProductOptions() {
     align-items: center;
     margin: 0;
     padding: 0;
+    text-align:center;
     }
     .block{
     display:block;
     }
     .inline-block{
     display:inline-block;
+    }
+    .w-100%{
+    width:100%;
     }
     .w-75px{
     width:75px;
@@ -253,11 +628,20 @@ function updateProductOptions() {
     .w-150px{
     width:145px;
     }
+    .w-200px{
+    width:200px;
+    }
     .w-400px{
     width:398px;
     }
     .w-500px{
-    width:500px;
+    width:496px;
+    }
+    .w-1100px{
+    width:1098px;
+    }
+    .w-1200px{
+    width:1200px;
     }
     .bg-red{
     background-color: red;
@@ -274,11 +658,17 @@ function updateProductOptions() {
     .mg-0{
     margin:0;
     }
+    .mg-l-100{
+    margin-left:100px;
+    }
     .mg-l--5{
     margin-left:-5px;
     }
     .ta-c{
     text-align:center;
+    }
+    .ta-l{
+  text-align: left;
     }
     .po-ab{
     position:absolute;
@@ -300,6 +690,9 @@ function updateProductOptions() {
     }
     .m-b-25{
     margin-bottom:25px;
+    }
+    .fs-20px{
+    font-size:20px;
     }
     </style>
 <%@ include file="../common/foot.jspf"%>

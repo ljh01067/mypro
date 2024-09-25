@@ -70,73 +70,17 @@
 					</a>
 				</li>
 				<li>
-					<a class="hover:underline" href="/">HOME</a>
+					<a class="hover:underline" href="../article/item">품목별 가격정보</a>
 				</li>
 				<li>
-					<div class="dropdown dropdown-hover">
-						<div tabindex="0" role="button">
-							<a href="../article/list?boardId=1&page=1">LIST</a>
-						</div>
-						<ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
-							<li>
-								<a href="../article/list?boardId=1&page=1">NOTICE</a>
-							</li>
-							<li>
-								<a href="../article/list?boardId=2&page=1">FREE</a>
-							</li>
-							<li>
-								<a href="../article/list?boardId=3&page=1">QnA</a>
-							</li>
-						</ul>
-					</div>
+					<a class="hover:underline" href="../article/cart">장바구니 가격비교</a>
 				</li>
-				<c:if test="${!rq.isLogined() }">
-					<li>
-						<a class="hover:underline" href="../member/login">LOGIN</a>
-					</li>
-					<li>
-						<a class="hover:underline" href="../member/join">JOIN</a>
-					</li>
-				</c:if>
-				<c:if test="${rq.isLogined() }">
-					<li>
-						<a class="hover:underline" href="../article/write">WRITE</a>
-					</li>
-					<li>
-						<a class="hover:underline" href="../member/myPage">MYPAGE</a>
-					</li>
-					<li>
-						<a onclick="if(confirm('로그아웃 하시겠습니까?') == false) return false;" class="hover:underline" href="../member/doLogout">LOGOUT</a>
-					</li>
-				</c:if>
-				<c:if test="${rq.admin}">
-					<li class="hover:underline">
-						<a class="h-full px-3 flex items-center" href="/adm/member/list">
-							<span>M.LIST</span>
-						</a>
-					</li>
-				</c:if>
+				<li>
+					<a class="hover:underline" href="../article/discount">생필품 할인 정보</a>
+				</li>
 			</ul>
 		</div>
 	</header>
-
-	<h1>${pageTitle }</h1>
-	<div class="body">
-  <nav class="menu_box_1">
-      <ul class="height-100p flex">
-        <li>
-          <a href="../article/item" class="flex flex-ai-c height-100p">품목별 가격정보</a>
-        </li>
-        <li>
-          <a href="../article/cart" class="flex flex-ai-c height-100p">장바구니 가격비교</a>
-        </li>
-        <li>
-          <a href="../article/discount" class="flex flex-ai-c height-100p">생필품 할인 정보</a>
-        </li>
-      </ul>
-      <div class="bg"></div>
-    </nav>
-</div>
 <style>
 @import url(//fonts.googleapis.com/earlyaccess/notosanskr.css);
 html {
