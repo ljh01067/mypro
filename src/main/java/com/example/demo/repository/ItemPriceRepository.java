@@ -40,5 +40,10 @@ public interface ItemPriceRepository {
             SELECT d.goodSmlclsCode FROM detailitem d WHERE d.name = #{detailItem};
             """)
     public String findGoodsmlclscodeByDetailId(@Param("detailItem") String detailItem);
+    
+    @Select("""
+            SELECT `code` FROM region WHERE name = #{region};
+            """)
+    public String findCodeByRegion(@Param("region") String region);
 
 }

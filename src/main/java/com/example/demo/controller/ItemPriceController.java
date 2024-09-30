@@ -72,17 +72,14 @@ public class ItemPriceController {
     @GetMapping("/businesscodename")
     @ResponseBody
     public List<String> getBusinessCodeName(@RequestParam(name = "business") List<String> business) {
-        System.out.println("business: " + business);
+    	System.out.println("받은 비즈니스 리스트: " + business); // 여기서 확인
         if (business == null || business.isEmpty()) {
-            // 빈 문자열에 대한 예외 처리
             throw new IllegalArgumentException("Business must not be empty");
         }
         try {
             List<String> businessCodeNames = itemPriceService.getBusinessCodeName(business);
-            System.out.println("Business Code Names: " + businessCodeNames);
             return businessCodeNames;
         } catch (Exception e) {
-            // 예외 처리 및 로그 기록
             e.printStackTrace();
             throw new RuntimeException("서버 오류가 발생했습니다. 나중에 다시 시도해 주세요.");
         }
@@ -115,6 +112,29 @@ public class ItemPriceController {
     public List<String> getRegion() {
         return itemPriceService.getRegion();
     }
+    
+    @GetMapping("/getRegionCode")
+    @ResponseBody  // 이 애노테이션은 반환 값을 HTTP 응답 본문에 직접 작성해야 함을 나타냅니다.
+    public String getRegionCode(@RequestParam("region") String region) {
+        System.out.println("받은 지역: " + region);  // 받은 지역 로그
+
+        if (region == null || region.trim().isEmpty()) {
+            // 빈 문자열에 대한 예외 처리
+            throw new IllegalArgumentException("지역은 비워둘 수 없습니다.");
+        }
+
+        try {
+            String regionCode = itemPriceService.getRegionCodeByRegionName(region);
+            System.out.println("반환할 지역 코드: " + regionCode);  // 반환할 지역 코드 로그
+            return regionCode;  // 성공적으로 지역 코드 반환
+        } catch (Exception e) {
+            // 예외 처리 및 로그 기록
+            e.printStackTrace();
+            throw new RuntimeException("서버 오류가 발생했습니다. 나중에 다시 시도해 주세요.");
+        }
+    }
+
+    
     @GetMapping("/itemlist")
     @ResponseBody
     public List<String> getItemList() {

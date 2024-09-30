@@ -3,10 +3,13 @@
 <c:set var="pageTitle" value="ITEM"></c:set>
 <%@ include file="../common/head.jspf"%>
 <script>
+let storeNames = [];
 function updateStore() {
+	storeNames = [];
     const business = document.querySelectorAll("input[name='business']:checked");
-    const region = document.getElementById("region").value;
-    console.log(business);
+    let region = document.getElementById("region")?.value; // 선택된 지역 값
+
+    console.log("선택된 지역 값:", region);
 
     // 업소 선택 여부 확인
     if (business.length === 0) {
@@ -16,62 +19,88 @@ function updateStore() {
 
     // 선택된 업소 값을 배열로 변환
     const businessValues = Array.from(business).map(input => input.value);
+    console.log("선택된 업소 값들:", businessValues);
 
-    // Ajax로 업소 코드 이름 가져오기
+    // 1. 지역 코드 가져오기
     $.ajax({
-    url: `/usr/article/businesscodename`,
-    type: 'GET',
-    traditional: true,  // 배열을 전통적인 방식으로 직렬화
-    data: { business: businessValues },
-    success: function(businessCodeNames) {
-    	console.log('업소 코드 이름들:', businessCodeNames);
-            // XML 데이터 요청
-            fetch('/usr/home/getSData')
-                .then(response => response.text())
-                .then(xmlResponse => {
-                    const parser = new DOMParser();
-                    const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+        url: '/usr/article/getRegionCode',
+        type: 'GET',
+        data: { region: region },
+        success: function(regionCode) {
+             // 지역 코드 확인
 
-                    // XML 데이터에서 'iros.openapi.service.vo.entpInfoVO' 태그 찾기
-                    const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
-                    const storeNames = [];
+            // 2. 업소 코드 이름 가져오기
+            $.ajax({
+                url: '/usr/article/businesscodename',
+                type: 'GET',
+                data: { business: businessValues },
+                success: function(businessCodeNames) {
+                    console.log("업소 코드 이름들 성공적으로 받아옴:", businessCodeNames);
 
-                    // XML 데이터에서 조건에 맞는 항목 필터링
-                    Array.from(items).forEach(item => {
-                        const entptypecode = item.getElementsByTagName('entpTypeCode')[0]?.textContent.trim();
-                        const roadaddrbasic = item.getElementsByTagName('roadAddrBasic')[0]?.textContent.trim().slice(0, 2);
-                        const region2 = region.slice(0, 2);
+                    // 3. XML 데이터 요청
+                    fetch('/usr/home/getSData')
+                        .then(response => response.text())
+                        .then(xmlResponse => {
+                            const parser = new DOMParser();
+                            const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+                            const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
 
-                        // 업소 코드와 지역 조건에 맞는 항목을 필터링
-                        if (businessCodeNames.includes(entptypecode) && (region === '' || roadaddrbasic === region2)) {
-                            const storeName = item.getElementsByTagName('entpName')[0]?.textContent.trim();
-                            if (storeName) {
-                                storeNames.push(storeName);
-                            }
-                        }
-                    });
+                            // XML 데이터에서 조건에 맞는 항목 필터링
+                            Array.from(items).forEach(item => {
+                                const entpTypeCode = item.getElementsByTagName('entpTypeCode')[0]?.textContent.trim();
+                                const entpAreaCode = item.getElementsByTagName('entpAreaCode')[0]?.textContent.trim();
+                                console.log(regionCode);
+                                console.log(entpAreaCode);
 
-                    // 상점 목록을 갱신
-                    const storeSelect = document.getElementById("store");
-                    storeSelect.innerHTML = "<option value='' selected disabled>전체</option>";
-                    storeNames.forEach(store => {
-                        const option = document.createElement("option");
-                        option.value = store;
-                        option.textContent = store;
-                        storeSelect.appendChild(option);
-                    });
-                })
-                .catch(error => {
-                    console.error('XML 데이터를 가져오는 중 오류 발생:', error);
-                    alert('XML 데이터를 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
-                });
+                                if (region === 'all') {
+                                    // 지역이 'all'이면 업소 코드만으로 필터링
+                                    if (businessCodeNames.includes(entpTypeCode)) {
+                                        const storeName = item.getElementsByTagName('entpName')[0]?.textContent.trim();
+                                        console.log("매칭된 상점 이름 (지역 무시):", storeName);
+                                        if (storeName) {
+                                            storeNames.push(storeName);
+                                        }
+                                    }
+                                } else {
+                                    // 지역이 'all'이 아닌 경우 업소 코드와 지역 코드 둘 다 필터링
+                                    if (businessCodeNames.includes(entpTypeCode) && entpAreaCode === '0' + regionCode) {
+                                        const storeName = item.getElementsByTagName('entpName')[0]?.textContent.trim();
+                                        console.log("매칭된 상점 이름:", storeName);
+                                        if (storeName) {
+                                            storeNames.push(storeName);
+                                        }
+                                    }
+                                }
+                            });
+
+                            // 상점 목록을 갱신
+                            const storeSelect = document.getElementById("store");
+                            storeSelect.innerHTML = "<option value='all'>전체</option>";
+                            storeNames.forEach(store => {
+                                const option = document.createElement("option");
+                                option.value = store;
+                                option.textContent = store;
+                                storeSelect.appendChild(option);
+                            });
+                        })
+                        .catch(error => {
+                            console.error('XML 데이터 요청 중 오류 발생:', error);
+                            alert('업소 정보를 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
+                        });
+                },
+                error: function(xhr, status, error) {
+                    console.error("업소 코드 이름 요청 중 오류 발생:", error);
+                    alert('업소 코드 이름을 가져오는 데 실패했습니다.');
+                }
+            });
         },
         error: function(xhr, status, error) {
-            console.error('업소 코드를 가져오는 중 오류 발생:', error);
-            alert('업소 코드를 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
+            console.error("지역 코드 요청 중 오류 발생:", error);
+            alert('지역 코드를 가져오는 데 실패했습니다.');
         }
     });
 }
+
 function updateDetailItems() {
     const category = document.getElementById("category").value;
     const detailItemSelect = document.getElementById("detailItem");
@@ -103,6 +132,7 @@ function updateDetailItems() {
             alert('상세 품목을 가져오는 데 실패했습니다. 나중에 다시 시도해 주세요.');
         }
     });
+
 }
 
 function updateProductOptions() {
@@ -161,82 +191,61 @@ function updateProductOptions() {
         }
     });
 }
-</script>
-<script>
 function fetchItemList() {
-    const store = document.getElementById("store").value;
+    console.log("Store Names from updateStore:", storeNames);
+
     const product = document.getElementById("product").value;
     const goodInspectDay = "20220805"; // 고정된 값 또는 필요한 경우 동적으로 설정
-    
-    console.log(store);
 
-    if (!store && !product) {
-        alert("모든 항목을 선택해 주세요.");
-        return;
-    }
+    console.log("Selected Stores:", storeNames);
 
-    let entpId = null, goodId = null;
+    let entpIds = [];
 
-    // 첫 번째 요청: /usr/home/getSData에서 store에 해당하는 entpId 가져오기
-    if (store) {
-        fetchXMLData('/usr/home/getSData', (xmlDoc) => {
-            entpId = getStoreIdFromXML(xmlDoc, store);
-            console.log("Store ID (entpId):", entpId);
-
+    // 첫 번째 요청: /usr/home/getSData에서 store에 해당하는 entpIds 가져오기
+    fetchXMLData('/usr/home/getSData', (xmlDoc) => {
+        entpIds = getStoreIdsFromXML(xmlDoc, storeNames); // store 배열을 넘김
+        console.log("Fetched Entp IDs:", entpIds); // entpIds 로그 확인
+        if (entpIds.length > 0) {
             // 두 번째 요청: /usr/home/getCData에서 product에 해당하는 goodId 가져오기
-            if (product) {
-                fetchXMLData('/usr/home/getCData', (xmlDoc) => {
-                    goodId = getProductIdFromXML(xmlDoc, product);
-                    console.log("Product ID (goodId):", goodId);
-
-                    // 세 번째 요청: /usr/home/getPData에서 가격 가져오기 (entpId 또는 goodId가 없는 경우도 고려)
-                    fetchPriceData(entpId, goodId, goodInspectDay);
-                });
-            } else {
-                // 상품이 선택되지 않은 경우 상점 ID만으로 가격 조회
-                fetchPriceData(entpId, goodId, goodInspectDay);
-            }
-        });
-    } else if (product) {
-        // 상점이 선택되지 않은 경우 상품 ID만으로 가격 조회
-        fetchXMLData('/usr/home/getCData', (xmlDoc) => {
-            goodId = getProductIdFromXML(xmlDoc, product);
-            console.log("Product ID (goodId):", goodId);
-
-            fetchPriceData(entpId, goodId, goodInspectDay);
-        });
-    }
-}
-
-// 가격 정보를 가져오는 함수 (entpId 또는 goodId가 없는 경우 처리)
-async function fetchPriceData(entpId, goodId, goodInspectDay) {
-    // 세 번째 요청: /usr/home/getPData에서 가격 가져오기
-    fetchXMLDataWithParams('/usr/home/getPData', { entpId, goodId, goodInspectDay }, async (xmlDoc) => {
-        // getPricesFromXML을 호출할 때 await를 사용하여 결과를 기다림
-        const prices = await getPricesFromXML(xmlDoc, goodId, entpId);
-
-        // prices 배열이 비어있지 않은 경우 가격 테이블 업데이트
-        if (prices.length > 0) {
-            updatePriceTable(prices);
+            fetchXMLData('/usr/home/getCData', (xmlDoc) => {
+                const goodId = getProductIdFromXML(xmlDoc, product);
+                if (goodId) {
+                    // 세 번째 요청: /usr/home/getPData에서 가격 가져오기
+                    Promise.all(entpIds.map(entpId => {
+                        return fetchXMLDataWithParams('/usr/home/getPData', { entpId, goodId, goodInspectDay })
+                            .then(xmlDoc => {
+                                return getPricesFromXML(xmlDoc, goodId, entpIds);
+                            });
+                    })).then(pricesArray => {
+                        const allPrices = pricesArray.flat(); // 배열 평탄화
+                        if (allPrices.length > 0) {
+                            updatePriceTable(allPrices);
+                        } else {
+                            console.log("가격을 찾을 수 없음");
+                            alert("해당 상품의 가격을 찾을 수 없습니다.");
+                        }
+                    });
+                } else {
+                    console.log("상품 ID를 찾을 수 없음");
+                    alert("해당 상품의 ID를 찾을 수 없습니다.");
+                }
+            });
         } else {
-            console.log("가격을 찾을 수 없음");
-            alert("해당 상품의 가격을 찾을 수 없습니다.");
+            console.log("상점 ID를 찾을 수 없음");
+            alert("해당 상점의 ID를 찾을 수 없습니다.");
         }
     });
 }
-
 function updatePriceTable(prices) {
     const tableBody = document.querySelector("#priceDisplay table tbody");
     tableBody.innerHTML = ""; // 기존 내용을 지우고 새 데이터를 추가
-
     prices.forEach(price => {
         const row = document.createElement("tr");
-
         const goodIdCell = document.createElement("td");
         goodIdCell.style.textAlign = "center";
         goodIdCell.textContent = price.goodId;
         row.appendChild(goodIdCell);
-
+        
         const storeCell = document.createElement("td");
         storeCell.style.textAlign = "center";
         storeCell.textContent = price.entpId;
@@ -246,12 +255,12 @@ function updatePriceTable(prices) {
         productCell.style.textAlign = "center";
         productCell.textContent = price.product;
         row.appendChild(productCell);
-
+        
         const priceCell = document.createElement("td");
         priceCell.style.textAlign = "center";
         priceCell.textContent = price.price + " 원";
         row.appendChild(priceCell);
-
+        
         tableBody.appendChild(row);
     });
 }
@@ -272,58 +281,41 @@ function fetchXMLData(url, callback) {
         });
 }
 
-function fetchXMLDataWithParams(baseUrl, params, callback) {
-    let finalUrl = baseUrl;
-
-    // 파라미터가 존재하는지 확인하고, URL에 추가
-    if (params) {
-        const urlParams = new URLSearchParams();
-
-        // 각 파라미터의 값이 있을 경우에만 쿼리 스트링에 추가
-        if (params.entpId) {
-            urlParams.append('entpId', params.entpId);
-        }
-        if (params.goodId) {
-            urlParams.append('goodId', params.goodId);
-        }
-        if (params.goodInspectDay) {
-            urlParams.append('goodInspectDay', params.goodInspectDay);
-        }
-
-        // 파라미터가 있으면 '?'를 붙여서 쿼리스트링 형태로 변환
-        if (urlParams.toString()) {
-            finalUrl += '?' + urlParams.toString();
-        }
-    }
-
-    console.log("Final URL:", finalUrl);  // 최종 URL 출력
-
-    // fetch로 요청을 보냄
-    fetch(finalUrl)
+function fetchXMLDataWithParams(url, params) {
+    console.log("Fetching URL with Params:", url, params);
+    const queryString = new URLSearchParams(params).toString();
+    const finalUrl = url + `?` + queryString;
+    console.log("Final URL:", finalUrl);
+    return fetch(finalUrl)
         .then(response => response.text())
-        .then(data => {
+        .then(xmlResponse => {
             const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(data, "application/xml");
-            callback(xmlDoc);
+            const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+            console.log("Fetched Data:", xmlResponse); // 서버에서 받아온 XML 데이터 확인
+            return xmlDoc; // XML 문서를 반환
         })
         .catch(error => {
-            console.error("Error fetching XML:", error);
+            console.error('XML 데이터를 가져오는 중 오류 발생:', error);
+            alert('XML 데이터를 가져오는 데 실패했습니다.');
         });
 }
 
-function getStoreIdFromXML(xmlDoc, store) {
+function getStoreIdsFromXML(xmlDoc, stores) {
     console.log("Parsing Store XML");
     const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
+    const matchedEntpIds = []; // 매칭된 entpId를 저장할 배열 생성
+
     for (let i = 0; i < items.length; i++) {
         const entpName = items[i].getElementsByTagName('entpName')[0].textContent;
         console.log("entpName:", entpName); // 상점 이름 확인
-        if (store === entpName) {
+        if (stores.includes(entpName)) { // store 배열에 있는지 확인
             const entpId = items[i].getElementsByTagName('entpId')[0].textContent;
             console.log("Matched entpId:", entpId); // 매칭된 상점 ID 확인
-            return entpId;
+            matchedEntpIds.push(entpId); // 매칭된 entpId를 배열에 추가
         }
     }
-    return null;
+
+    return matchedEntpIds; // 배열 형태로 반환
 }
 
 function getProductIdFromXML(xmlDoc, product) {
@@ -341,162 +333,134 @@ function getProductIdFromXML(xmlDoc, product) {
     return null;
 }
 
-async function fetchStoreName(entpId) {
-
-    try {
-        const response = await fetch('/usr/home/getSData');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const xmlText = await response.text();
-
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlText, "application/xml");
-
-        // xmlDoc이 null인지 확인
-        if (!xmlDoc) {
-            console.error("Failed to parse XML.");
-            return null;
-        }
-        if (!xmlDoc.documentElement) {
-            console.error("XML Document is not available or invalid.");
-            return null;
-        }
-
-        const storeName = getStoreNameFromXML(xmlDoc, entpId);
-        if (storeName) {
-            console.log("Found store name:", storeName); // 찾은 상점 이름 출력
-        } else {
-            console.log("No matching store found for entpId:", entpId); // 일치하는 상점이 없을 경우 로그
-        }
-        
-        return storeName; // 찾은 상점 이름 반환
-    } catch (error) {
-        console.error('Error fetching store name:', error);
-        return null; // 오류가 발생할 경우 null 반환
-    }
-}
-function getStoreNameFromXML(xmlDoc, entpId) {
-	const business = document.querySelectorAll("input[name='business']:checked");
-    const region = document.getElementById("region").value;
-    const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
-    for (let i = 0; i < items.length; i++) {
-    	const entptypecode = items[i].getElementsByTagName('entpTypeCode')[0]?.textContent.trim();
-        const itemEntpId = items[i].getElementsByTagName('entpId')[0].textContent;
-        const roadaddrbasic = items[i].getElementsByTagName('roadAddrBasic')[0]?.textContent.trim().slice(0, 2);
-        const region2 = region.slice(0, 2);
-        if (businessCodeNames.includes(entptypecode) && entpId === itemEntpId && region2 === roadaddrbasic) {
-            const entpName = items[i].getElementsByTagName('entpName')[0].textContent;
-            return entpName; // 찾은 상점 이름 반환
-        }
-    }
-    return null; // 매칭된 상점이 없을 경우 null 반환
-}
-
-async function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
+async function getPricesFromXML(xmlDoc, goodId, entpIds) {
     console.log("Parsing Price XML");
-
-    // xmlDoc이 null인지 확인
+    
+    // xmlDoc가 null 또는 undefined인지 확인
     if (!xmlDoc) {
         console.error("xmlDoc is null or undefined.");
-        return returnMultiple ? [] : null;
+        return [];
     }
-    if (!xmlDoc.documentElement) {
-        console.error("XML Document is not available or invalid.");
-        return returnMultiple ? [] : null;
-    }
-    console.log(xmlDoc.documentElement);
 
-    // XML 응답을 문자열로 변환하여 출력
-    const serializer = new XMLSerializer();
-    try {
-        const xmlString = serializer.serializeToString(xmlDoc);
-        console.log("XML Document:", xmlString);
-    } catch (error) {
-        console.error("Error serializing XML document:", error);
-        return returnMultiple ? [] : null;
+    // entpIds가 배열인지 확인
+    if (!Array.isArray(entpIds)) {
+        console.error("entpIds는 배열이어야 합니다. 현재 값:", entpIds);
+        return []; // 빈 배열 반환
     }
 
     const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.goodPriceVO');
     console.log("Number of items found:", items.length);
-
-    // 여러 개의 가격을 저장할 배열
     const prices = [];
-
+    
     for (let i = 0; i < items.length; i++) {
         const itemGoodIdElement = items[i].getElementsByTagName('goodId')[0];
         const itemEntpIdElement = items[i].getElementsByTagName('entpId')[0];
         const itemGoodPriceElement = items[i].getElementsByTagName('goodPrice')[0];
-
+        
         const itemGoodId = itemGoodIdElement ? itemGoodIdElement.textContent.trim() : null;
         const itemEntpId = itemEntpIdElement ? itemEntpIdElement.textContent.trim() : null;
         const itemGoodPrice = itemGoodPriceElement ? itemGoodPriceElement.textContent.trim() : null;
 
-        const store = document.getElementById("store").value;
-        const region = document.getElementById("region").value;
-        const product = document.getElementById("product").value;
-
-        // 상품 아이디와 상점 아이디가 모두 있는 경우
-        if (goodId && entpId) {
-            if (itemGoodId === goodId && itemEntpId === entpId) {
-                if (!returnMultiple) {
-                    console.log("Matched Price:", itemGoodPrice);
-                    return itemGoodPrice;
-                }
-                prices.push({
-                    goodId: region,
-                    entpId: store,
-                    product: product,
-                    price: itemGoodPrice
-                });
-            }
-        }
-        // 상품 아이디만 있는 경우
-        else if (goodId && !entpId) {
-            if (itemGoodId === goodId) {
-                if (!returnMultiple) {
-                    console.log("Matched Price:", itemGoodPrice);
-                    return itemGoodPrice;
-                }
-                // entpId를 사용하여 상점 이름 가져오기
-                const storeName = await fetchStoreName(itemEntpId);
-                if (storeName) {  // storeName이 null인지 확인
-                    prices.push({
-                        goodId: region,
-                        entpId: storeName,  // 가져온 상점 이름 사용
-                        product: product,
-                        price: itemGoodPrice
-                    });
-                }
-            }
-        }
-        // 상점 아이디만 있는 경우
-        else if (!goodId && entpId) {
-            if (itemEntpId === entpId) {
-                if (!returnMultiple) {
-                    console.log("Matched Price:", itemGoodPrice);
-                    return itemGoodPrice;
-                }
-                prices.push({
-                    goodId: region,
-                    entpId: store,
-                    product: product,
-                    price: itemGoodPrice
-                });
-            }
+        // 여러 entpId와 비교하여 가격 정보 추가
+        if (itemGoodId === goodId && entpIds.includes(itemEntpId)) {
+            let region = document.getElementById("region")?.value;
+            const storename = await getEntpNameById(itemEntpId); // await로 비동기 결과 기다리기
+            const goodname = await getGoodNameById(goodId); // await로 비동기 결과 기다리기
+            prices.push({
+                goodId: region,
+                entpId: storename,
+                product: goodname, // 이곳에서 사용할 제품 정보를 추가
+                price: itemGoodPrice
+            });
         }
     }
+    
+    console.log("Matched Prices:", prices);
+    return prices; // 가격 정보 배열 반환
+}
 
-    if (returnMultiple) {
-        console.log("Matched Prices:", prices);
-        return prices;
-    } else {
-        console.log("가격을 찾을 수 없음");
-        return null;
+async function getEntpNameById(entpId) {
+    const url = `/usr/home/getSData`; // 상점 정보를 가져오는 API 호출 URL
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error("네트워크 응답이 좋지 않습니다.");
+        }
+        const xmlResponse = await response.text(); // XML 형식으로 응답을 텍스트로 변환
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+        
+        const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.entpInfoVO');
+        let entpName = null;
+        for (const item of items) {
+            const id = item.getElementsByTagName('entpId')[0]?.textContent.trim();
+            if (id === entpId) {
+                entpName = item.getElementsByTagName('entpName')[0]?.textContent.trim();
+                break; // 원하는 entpId를 찾으면 루프 종료
+            }
+        }
+        if (entpName) {
+            return entpName;
+        } else {
+            console.log("해당 ID에 대한 상점 정보를 찾을 수 없습니다.");
+        }
+    } catch (error) {
+        console.error("API 호출 중 오류 발생:", error);
     }
 }
 
+async function getGoodNameById(goodId) {
+    const url = `/usr/home/getCData`; // 상점 정보를 가져오는 API 호출 URL
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error("네트워크 응답이 좋지 않습니다.");
+        }
+        const xmlResponse = await response.text(); // XML 형식으로 응답을 텍스트로 변환
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+        
+        const items = xmlDoc.getElementsByTagName('item');
+        let goodName = null;
+        for (const item of items) {
+            const id = item.getElementsByTagName('goodId')[0]?.textContent.trim();
+            if (id === goodId) {
+                goodName = item.getElementsByTagName('goodName')[0]?.textContent.trim();
+                break; // 원하는 goodId를 찾으면 루프 종료
+            }
+        }
+        if (goodName) {
+            return goodName;
+        } else {
+            console.log("해당 ID에 대한 제품 정보를 찾을 수 없습니다.");
+        }
+    } catch (error) {
+        console.error("API 호출 중 오류 발생:", error);
+    }
+}
+
+async function getRegionNameById(entpId) {
+    const url = `/usr/home/getRData?entpId=`+entpId; // 상점 정보를 가져오는 API 호출 URL
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error("네트워크 응답이 좋지 않습니다.");
+        }
+        const xmlResponse = await response.text(); // XML 형식으로 응답을 텍스트로 변환
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+        
+        const region = xmlDoc.getElementsByTagName('codeName')[0].textContent;
+        if (region) {
+        	console.log(region);
+            return region;
+        } else {
+            console.log("지역 정보를 찾을 수 없습니다.");
+        }
+    } catch (error) {
+        console.error("API 호출 중 오류 발생:", error);
+    }
+}
 </script>
 <div class="w-100%">
 <div class="inline-block w-1200px">
@@ -523,7 +487,7 @@ async function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
         <div class="inline-block w-100px ta-c pd-0 mg-0">지역</div>
         <div class="inline-block w-500px pd-0 mg-l--5 ta-c m-b-25">
             <select name="region" id="region" onchange="updateStore()">
-    <option value="">전체</option>
+    <option value="all">전체</option>
     <c:forEach var="region" items="${region}">
         <option value="${region}">${region}</option>
     </c:forEach>
@@ -532,7 +496,7 @@ async function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
         <div class="inline-block w-100px pd-0 mg-0">판매점</div>
         <div class="inline-block w-500px pd-0 mg-l--5 ta-c">
             <select name="store" id="store" style="vertical-align: middle;">
-                    <option value="" >전체</option>
+                    <option value="all" >전체</option>
                 </select>
         </div>
         </div>
@@ -542,7 +506,7 @@ async function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
             <div class="inline-block w-100px ta-c pd-0 mg-0" style="vertical-align: middle;">품목</div>
             <div class="inline-block w-500px pd-0 mg-l--5 ta-c m-b-25">
                 <select name="category" id="category" onchange="updateDetailItems()">
-    <option value="" >품목을 선택하세요</option>
+    <option value="all" >품목을 선택하세요</option>
     <c:forEach var="category" items="${categories}">
         <option value="${category}">${category}</option>
     </c:forEach>
@@ -551,7 +515,7 @@ async function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
             <div class="inline-block w-100px pd-0 mg-0" style="vertical-align: middle;">상세품목</div>
             <div class="inline-block w-500px pd-0 mg-l--5 ta-c">
                 <select name="detailItem" id="detailItem" onchange="updateProductOptions()" style="vertical-align: middle;">
-                    <option value="" >상세품목을 선택하세요</option>
+                    <option value="all" >상세품목을 선택하세요</option>
                 </select>
             </div>
             <hr class="w-1200px">
@@ -559,7 +523,7 @@ async function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
             <div class="inline-block ta-c w-100px pd-0 mg-0" style="vertical-align: middle;">상품</div>
             <div class="inline-block w-1100px pd-0 mg-l--5 ta-c m-b-25">
                 <select name="product" id="product" style="vertical-align: middle;">
-                    <option value="" >상품을 선택하세요</option>
+                    <option value="all" >상품을 선택하세요</option>
                 </select>
             </div>
         </div>

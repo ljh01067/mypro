@@ -77,7 +77,32 @@ function getSData() {
 // 함수를 호출하는 부분
 getSData();
 </script>
+<script>
+async function getRegionNameById(entpId) {
+    const url = `/usr/home/getRData?entpId=`+entpId; // 상점 정보를 가져오는 API 호출 URL
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error("네트워크 응답이 좋지 않습니다.");
+        }
+        const xmlResponse = await response.text(); // XML 형식으로 응답을 텍스트로 변환
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlResponse, "text/xml");
+        
+        const region = xmlDoc.getElementsByTagName('codeName')[0].textContent;
+        if (region) {
+        	console.log(region);
+            return region;
+        } else {
+            console.log("지역 정보를 찾을 수 없습니다.");
+        }
+    } catch (error) {
+        console.error("API 호출 중 오류 발생:", error);
+    }
+}
 
+getRegionNameById("46");
+</script>
 
 <%@ include file="../common/head.jspf"%>
 

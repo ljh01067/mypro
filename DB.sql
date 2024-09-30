@@ -10,7 +10,8 @@ CREATE TABLE business(
 
 CREATE TABLE region(
        id INT(10) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
-      `name` CHAR(20) NOT NULL
+      `name` CHAR(20) NOT NULL,
+      `code` INT(10) NOT NULL
 );
 
 CREATE TABLE category(
@@ -44,39 +45,56 @@ SET `name` = '편의점',
 codeName = 'CS';
 
 INSERT INTO region
-SET `name` = '서울특별시';
+SET `name` = '서울특별시',
+`code` = 020100000;
 INSERT INTO region
-SET `name` = '부산광역시';
+SET `name` = '부산광역시',
+`code` = 020500000;
 INSERT INTO region
-SET `name` = '대구광역시';
+SET `name` = '대구광역시',
+`code` = 020300000;
 INSERT INTO region
-SET `name` = '대전광역시';
+SET `name` = '대전광역시',
+`code` = 020400000;
 INSERT INTO region
-SET `name` = '광주광역시';
+SET `name` = '광주광역시',
+`code` = 020200000;
 INSERT INTO region
-SET `name` = '울산광역시';
+SET `name` = '울산광역시',
+`code` = 020600000;
 INSERT INTO region
-SET `name` = '인천광역시';
+SET `name` = '인천광역시',
+`code` = 020700000;
 INSERT INTO region
-SET `name` = '강원특별자치도';
+SET `name` = '강원특별자치도',
+`code` = 020800000;
 INSERT INTO region
-SET `name` = '경기도';
+SET `name` = '경기도',
+`code` = 020900000;
 INSERT INTO region
-SET `name` = '경상남도';
+SET `name` = '경상남도',
+`code` = 021000000;
 INSERT INTO region
-SET `name` = '경상북도';
+SET `name` = '경상북도',
+`code` = 021100000;
 INSERT INTO region
-SET `name` = '전라남도';
+SET `name` = '전라남도',
+`code` = 021200000;
 INSERT INTO region
-SET `name` = '전북특별자치도';
+SET `name` = '전북특별자치도',
+`code` = 021301000;
 INSERT INTO region
-SET `name` = '충청남도';
+SET `name` = '충청남도',
+`code` = 021400000;
 INSERT INTO region
-SET `name` = '충청북도';
+SET `name` = '충청북도',
+`code` = 021500000;
 INSERT INTO region
-SET `name` = '제주특별자치도';
+SET `name` = '제주특별자치도',
+`code` = 021600000;
 INSERT INTO region
-SET `name` = '세종특별자치시';
+SET `name` = '세종특별자치시',
+`code` = 021700000;
 
 INSERT INTO category
 SET `name` = '곡물가공품';

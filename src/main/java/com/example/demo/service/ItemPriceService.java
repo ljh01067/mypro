@@ -44,4 +44,7 @@ public class ItemPriceService {
     public String findGoodsmlclscodeByDetailItem(String detailItem) {
         return itemPriceRepository.findGoodsmlclscodeByDetailId(detailItem);
     }
+    public String getRegionCodeByRegionName(String region) {
+        return itemPriceRepository.findCodeByRegion(region);
+    }
 }
