@@ -59,26 +59,21 @@
 </head>
 <body>
 	<header>
-		<div class="flex h-20 mx-auto items-center text-3xl">
-			<a href="/usr/home/main">LOGO</a>
-			<div class="flex-grow"></div>
+		<div class="flex h-20 mx-auto items-center text-3xl" style="background-color: #87CEEB; color: #333333;">
+			<a href="/usr/home/main" style="margin-left: 20px;">PriceCheck</a>
+			<div style="flex-grow: 1; display: flex; justify-content: center;">
 			<ul class="flex">
-				<li class="">
-					<a class="h-full px-3 flex items-center btn-theme-toggle" href="javascript:Theme__toggle();">
-						<span>🌞</span>
-						<span>🌚</span>
-					</a>
-				</li>
-				<li>
+				<li style="margin-left: 10px; margin-right: 10px;">
 					<a class="hover:underline" href="../article/item">품목별 가격정보</a>
 				</li>
-				<li>
+				<li style="margin-left: 10px; margin-right: 10px;">
 					<a class="hover:underline" href="../article/cart">장바구니 가격비교</a>
 				</li>
-				<li>
+				<li style="margin-left: 10px; margin-right: 10px;">
 					<a class="hover:underline" href="../article/discount">생필품 할인 정보</a>
 				</li>
 			</ul>
+			</div>
 		</div>
 	</header>
 <style>

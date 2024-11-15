@@ -162,6 +162,8 @@ function updateProductOptions() {
 }
 </script>
 <script>
+let currentPage = 1;
+const itemsPerPage = 5;
 function fetchItemList() {
     const store = document.getElementById("store").value;
     const product = document.getElementById("product").value;
@@ -208,8 +210,14 @@ function fetchItemList() {
 
 function updatePriceTable(prices) {
     const tableBody = document.querySelector("#priceDisplay table tbody");
+    tableBody.innerHTML = ""; // 테이블 초기화
 
-    prices.forEach(price => {
+    // 현재 페이지에 표시할 데이터 추출
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pagePrices = prices.slice(startIndex, endIndex);
+
+    pagePrices.forEach(price => {
         const row = document.createElement("tr");
 
         const goodIdCell = document.createElement("td");
@@ -221,7 +229,7 @@ function updatePriceTable(prices) {
         storeCell.style.textAlign = "center";
         storeCell.textContent = price.entpId;
         row.appendChild(storeCell);
-        
+
         const productCell = document.createElement("td");
         productCell.style.textAlign = "center";
         productCell.textContent = price.product;
@@ -232,10 +240,40 @@ function updatePriceTable(prices) {
         priceCell.textContent = price.price + " 원";
         row.appendChild(priceCell);
 
+        const deleteCell = document.createElement("td");
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "삭제";
+        deleteButton.onclick = function () {
+            deleteRow(row, parseFloat(price.price.replace(/,/g, '')));
+        };
+        deleteCell.appendChild(deleteButton);
+        row.appendChild(deleteCell);
+
         tableBody.appendChild(row);
     });
-}
 
+    updatePaginationControls(prices.length); // 페이지네이션 컨트롤 업데이트
+    updateTotalSum(); // 합계 업데이트
+}
+function updatePaginationControls(totalItems) {
+    const paginationControls = document.querySelector("#paginationControls");
+    paginationControls.innerHTML = ""; // 기존 페이지네이션 초기화
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+    for (let i = 1; i <= totalPages; i++) {
+        const button = document.createElement("button");
+        button.textContent = i;
+        button.onclick = function () {
+            currentPage = i;
+            updatePriceTable(prices); // 페이지 변경 시 테이블 다시 렌더링
+        };
+        if (i === currentPage) {
+            button.style.fontWeight = "bold"; // 현재 페이지 강조
+        }
+        paginationControls.appendChild(button);
+    }
+}
 function fetchXMLData(url, callback) {
     console.log("Fetching URL:", url);
     fetch(url)
@@ -304,7 +342,6 @@ function getProductIdFromXML(xmlDoc, product) {
 function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
     console.log("Parsing Price XML");
 
-    // xmlDoc이 null인지 확인
     if (!xmlDoc) {
         console.error("xmlDoc is null or undefined.");
         return returnMultiple ? [] : null;
@@ -315,7 +352,6 @@ function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
     }
     console.log(xmlDoc.documentElement);
 
-    // XML 응답을 문자열로 변환하여 출력
     const serializer = new XMLSerializer();
     try {
         const xmlString = serializer.serializeToString(xmlDoc);
@@ -328,10 +364,8 @@ function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
     const items = xmlDoc.getElementsByTagName('iros.openapi.service.vo.goodPriceVO');
     console.log("Number of items found:", items.length);
 
-    // 여러 개의 가격을 저장할 배열
     const prices = [];
-
-    for (let i = 0; i < items.length; i++) {
+    for (let i = 0; i < items.length && prices.length < 100; i++) { // 최대 100개까지만 추가
         const itemGoodIdElement = items[i].getElementsByTagName('goodId')[0];
         const itemEntpIdElement = items[i].getElementsByTagName('entpId')[0];
         const itemGoodPriceElement = items[i].getElementsByTagName('goodPrice')[0];
@@ -342,7 +376,6 @@ function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
         const store = document.getElementById("store").value;
         const region = document.getElementById("region").value;
         const product = document.getElementById("product").value;
-
 
         if (itemGoodId === goodId && itemEntpId === entpId) {
             if (!returnMultiple) {
@@ -465,7 +498,7 @@ function updateTotalSum() {
 </div>
 <br>
 <div class="w-1200px">
-    <div class="inline-block ta-c b-l-1 w-1200px">
+    <div class="inline-block ta-c b-l-1 w-1200px border-radius">
         <div class="inline-block pd-0 mg-0 w-1200px ta-l">
             <div class="inline-block w-100px pd-0 mg-0 ta-c">업소</div>
             <div class="inline-block pd-0 mg-l--5 ta-c checkbox-item">
@@ -528,7 +561,7 @@ function updateTotalSum() {
 <!-- 조회하기 버튼 -->
 <div class="ta-c">
     <br>
-    <button class="w-500 b-l-1" onclick="fetchItemList()">추가하기</button>
+    <button class="w-500 b-l-1 border-radius" onclick="fetchItemList()">추가하기</button>
     <div id="priceDisplay">
         <table border="1" cellspacing="0" cellpadding="5" style="width: 100%; border-collapse: collapse;">
             <thead>
@@ -550,6 +583,9 @@ function updateTotalSum() {
                 </c:forEach>
             </tbody>
         </table>
+    </div>
+    <div id="paginationControls" style="text-align: center; margin-top: 15px;">
+        <!-- 페이지네이션 버튼들이 추가될 곳 -->
     </div>
 </div>
 
@@ -651,6 +687,9 @@ function updateTotalSum() {
     }
     .fs-20px{
     font-size:20px;
+    }
+    .border-radius{
+    border-radius: 10px;
     }
     </style>
 <%@ include file="../common/foot.jspf"%>

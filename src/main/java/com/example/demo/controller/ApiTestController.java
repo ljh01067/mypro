@@ -4,6 +4,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import io.github.cdimascio.dotenv.Dotenv;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -12,6 +13,7 @@ import java.net.URL;
 
 @Controller
 public class ApiTestController {
+	private final Dotenv dotenv = Dotenv.load();
 
     @RequestMapping("/usr/home/APITest")
     public String showAPITest() {
@@ -26,7 +28,7 @@ public class ApiTestController {
     @RequestMapping("/usr/home/getCData")
     @ResponseBody
     public String getCData() {
-        String apiKey = "SeObeTWuK%2FAMq7zR7X0v6MFfspketKnfr3zWDlK12BG1T%2FEKIAE9Chtqzxf8bOWF2t0YDhcrDnywui%2FVuwm55g%3D%3D";
+        String apiKey = dotenv.get("API_KEY");
         String urlString = "http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getProductInfoSvc.do?serviceKey=" + apiKey;
 
         try {
@@ -56,7 +58,7 @@ public class ApiTestController {
     @RequestMapping("/usr/home/getSData")
     @ResponseBody
     public String getSData() {
-        String apiKey = "SeObeTWuK%2FAMq7zR7X0v6MFfspketKnfr3zWDlK12BG1T%2FEKIAE9Chtqzxf8bOWF2t0YDhcrDnywui%2FVuwm55g%3D%3D";
+        String apiKey = dotenv.get("API_KEY");
         String urlString = "http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getStoreInfoSvc.do?serviceKey=" + apiKey;
 
         try {
@@ -86,7 +88,7 @@ public class ApiTestController {
     @RequestMapping(value = "/usr/home/getRData", produces = "application/xml; charset=UTF-8")
     @ResponseBody
     public String getRData(@RequestParam(value = "entpId", required = false) String entpId) {
-        String apiKey = "SeObeTWuK%2FAMq7zR7X0v6MFfspketKnfr3zWDlK12BG1T%2FEKIAE9Chtqzxf8bOWF2t0YDhcrDnywui%2FVuwm55g%3D%3D";
+        String apiKey = dotenv.get("API_KEY");
         String urlString = "http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getStoreInfoSvc.do?serviceKey=" + apiKey + "&entpId=" + entpId;
 
         try {
@@ -118,7 +120,7 @@ public class ApiTestController {
     public String getPData(@RequestParam(value = "entpId", required = false) String entpId,
                            @RequestParam(value = "goodId", required = false) String goodId,
                            @RequestParam("goodInspectDay") String goodInspectDay) {
-        String apiKey = "SeObeTWuK%2FAMq7zR7X0v6MFfspketKnfr3zWDlK12BG1T%2FEKIAE9Chtqzxf8bOWF2t0YDhcrDnywui%2FVuwm55g%3D%3D";
+        String apiKey = dotenv.get("API_KEY");
         StringBuilder urlStringBuilder = new StringBuilder("http://openapi.price.go.kr/openApiImpl/ProductPriceInfoService/getProductPriceInfoSvc.do?");
         
         // 필수 파라미터 추가

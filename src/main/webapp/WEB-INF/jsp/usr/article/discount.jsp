@@ -381,10 +381,10 @@ function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
 </div>
 <br>
 <div class="w-1200px">
-    <div class="inline-block ta-c b-l-1 w-1200px">
+    <div class="inline-block ta-c b-l-1 w-1200px border-radius">
         <div class="inline-block pd-0 mg-0 w-1200px ta-l">
             <div class="inline-block w-100px pd-0 mg-0 ta-c">업소</div>
-            <div class="inline-block w-500px pd-0 mg-l--5 ta-c checkbox-item">
+            <div class="inline-block pd-0 mg-l--5 ta-c checkbox-item">
                 <c:forEach var="business" items="${business}">
             <input type="checkbox" id="business-${business}" name="business" value="${business}" onchange="updateStore()">
             <label for="business-${business}">${business}</label>
@@ -444,7 +444,7 @@ function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
 <!-- 조회하기 버튼 -->
 <div class="ta-c">
     <br>
-    <button class="w-500 b-l-1" onclick="fetchItemList()">조회하기</button>
+    <button class="w-500 b-l-1 border-radius" onclick="fetchItemList()">조회하기</button>
     <div id="priceDisplay">
         <table border="1" cellspacing="0" cellpadding="5" style="width: 100%; border-collapse: collapse;">
             <thead>
@@ -567,6 +567,9 @@ function getPricesFromXML(xmlDoc, goodId, entpId, returnMultiple = true) {
     }
     .fs-20px{
     font-size:20px;
+    }
+    .border-radius{
+    border-radius: 10px;
     }
     </style>
 <%@ include file="../common/foot.jspf"%>
